@@ -1,0 +1,4 @@
+**.terraform*
+terrafrom/*/.terragrunt-cache/*
+**/.terragrunt-cache/*
+**.env

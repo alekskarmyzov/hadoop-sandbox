@@ -1,0 +1,6 @@
+[namenode]
+nn.hadoop.akarmyzov.tl.scntl.com
+
+[datanodes]
+dn0.hadoop.akarmyzov.tl.scntl.com
+dn1.hadoop.akarmyzov.tl.scntl.com

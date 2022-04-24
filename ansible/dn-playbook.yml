@@ -1,0 +1,87 @@
+---
+- name: Prepare Data Nodes
+  hosts: datanodes
+  remote_user: ubuntu
+
+  tasks:
+  - name: Update apt-get repo and cache
+    become: true
+    apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 86400
+
+  - name: Install Unzip
+    become: true
+    apt:
+      name: unzip
+      state: present
+
+  - name: Install AWS CLI
+    become: true
+    apt:
+      name: awscli
+      state: present
+      
+  - name: Pull SSH keys for Data Nodes
+    ansible.builtin.shell: |
+      aws ssm get-parameter --region eu-central-1 --name "/akarmyzov/id_rsa.pub" --query 'Parameter.Value' --output text >> ~/.ssh/id_rsa.pub
+      cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+  - name: Install Java 8
+    become: true
+    apt:
+      name: openjdk-8-jdk
+      state: present
+
+  - name: Get Hadoop
+    ansible.builtin.shell: |
+      wget https://archive.apache.org/dist/hadoop/core/hadoop-3.3.2/hadoop-3.3.2.tar.gz
+      tar -xvf hadoop-3.3.2.tar.gz
+
+  - name: Add Hadoop and Java PATH variables to .bashrc
+    ansible.builtin.shell: |
+      cat <<EOF >>~/.bashrc
+      export HADOOP_HOME=${PWD}/hadoop-3.3.2
+      export HADOOP_CONF_DIR=${PWD}/hadoop-3.3.2/etc/hadoop
+      export HADOOP_MAPRED_HOME=${PWD}/hadoop-3.3.2
+      export HADOOP_COMMON_HOME=${PWD}/hadoop-3.3.2
+      export HADOOP_HDFS_HOME=${PWD}/hadoop-3.3.2
+      export YARN_HOME=${PWD}/hadoop-3.3.2
+      export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      export PATH=$PATH:/usr/lib/jvm/java-8-openjdk-amd64/bin:$PWD/hadoop-3.3.2/bin
+      EOF
+
+
+  - name: Create core-site.xml
+    ansible.builtin.shell: |
+      cat <<EOF >./hadoop-3.3.2/etc/hadoop/core-site.xml 
+      <?xml version="1.0" encoding="UTF-8"?>
+      <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+      <configuration>
+      <property>
+      <name>fs.default.name</name>
+      <value>nn.hadoop.akarmyzov.tl.scntl.com:9000</value>
+      </property>
+      </configuration>
+      EOF
+
+  - name: Create hdfs-site.xml
+    ansible.builtin.shell: |
+      cat <<EOF >./hadoop-3.3.2/etc/hadoop/hdfs-site.xml 
+      <?xml version="1.0" encoding="UTF-8"?>
+      <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+      <configuration>
+      <property>
+      <name>dfs.replication</name>
+      <value>1</value>
+      </property>
+      <property>
+      <name>dfs.permission</name>
+      <value>false</value>
+      </property>
+      </configuration>
+      EOF
+
+  - name: Add Java PATH to hadoop-env.sh
+    ansible.builtin.shell: echo "export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> hadoop-3.3.2/etc/hadoop/hadoop-env.sh
