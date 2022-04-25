@@ -288,6 +288,14 @@ resource "aws_route53_record" "hadoop_name_node" {
   records = [aws_instance.hadoop_name_node.public_ip]
 }
 
+resource "aws_route53_record" "hadoop_name_node_private" {
+  zone_id = var.hosted_zone_id
+  name    = "nnp.hadoop.akarmyzov.tl.scntl.com"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.hadoop_name_node.private_ip]
+}
+
 resource "aws_route53_record" "hadoop_data_node" {
   count = var.data_nodes_count
 

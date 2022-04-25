@@ -61,7 +61,7 @@
       <configuration>
       <property>
       <name>fs.default.name</name>
-      <value>nn.hadoop.akarmyzov.tl.scntl.com:9000</value>
+      <value>hdfs://nn.hadoop.akarmyzov.tl.scntl.com:9000</value>
       </property>
       </configuration>
       EOF

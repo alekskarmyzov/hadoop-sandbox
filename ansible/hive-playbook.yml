@@ -1,0 +1,48 @@
+---
+- name: Install Hive
+  hosts: namenode
+  remote_user: ubuntu
+
+  tasks:
+  - name: Install Hive
+    ansible.builtin.shell: |
+      wget https://dlcdn.apache.org/hive/hive-3.1.3/apache-hive-3.1.3-bin.tar.gz
+      tar -xzvf apache-hive-3.1.3-bin.tar.gz
+      cd apache-hive-3.1.3-bin
+      export HIVE_HOME=$(pwd)
+      echo "export HIVE_HOME=apache-hive-3.1.3-bin" >> ~/.bashrc
+      echo "export PATH=apache-hive-3.1.3-bin/bin:\$PATH" >> ~/.bashrc
+      
+  - name: Configure Hive
+    become_user: ubuntu
+    ansible.builtin.shell: |
+      cp apache-hive-3.1.3-bin/conf/hive-env.sh.template apache-hive-3.1.3-bin/conf/hive-env.sh      
+      chmod +x apache-hive-3.1.3-bin/conf/hive-env.sh/hive-env.sh
+
+      echo "export HADOOP_HOME=${PWD}/hadoop-3.3.2" >> apache-hive-3.1.3-bin/conf/hive-env.sh
+      echo "export HADOOP_HEAPSIZE=512" >> apache-hive-3.1.3-bin/conf/hive-env.sh
+      echo "export HIVE_CONF_DIR=apache-hive-3.1.3-bin/conf" >> apache-hive-3.1.3-bin/conf/hive-env.sh
+      echo "export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64" >> apache-hive-3.1.3-bin/conf/hive-env.sh
+      echo "export YARN_HOME=$HADOOP_YARN_HOME" >> apache-hive-3.1.3-bin/conf/hive-env.sh
+
+  - name: Create hive-site.xml
+    ansible.builtin.shell: |
+      cat <<EOF >apache-hive-3.1.3-bin/conf/hive-site.xml
+      <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+      <configuration>
+        <property>
+          <name>javax.jdo.option.ConnectionURL</name>
+          <value>jdbc:derby:apache-hive-3.1.3-bin/conf/metastore_db;create=true</value>
+          <description>
+            JDBC connect string for a JDBC metastore.
+            To use SSL to encrypt/authenticate the connection, provide database-specific SSL flag in the connection URL.
+            For example, jdbc:postgresql://myhost/db?ssl=true for postgres database.
+          </description>
+        </property>
+      </configuration>  
+      EOF
+
+      rm -rf apache-hive-3.1.3-bin/conf/metastore_db
+      apache-hive-3.1.3-bin/bin/schematool -initSchema -dbType derby
+      
